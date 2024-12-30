@@ -238,32 +238,41 @@
             const totalKPRCost = monthlyPayment * totalPayments + downPayment;
 
             // Calculate savings and rent over KPR period
-            let currentSavings = 0;
+            // Start with down payment as initial savings
+            let currentSavings = downPayment;
             let totalRentPaid = 0;
             let currentYearlyRent = yearlyRent;
             let yearlyData = [];
             let currentSavingsPerYear = [];
+            let initialMonthlySavings = monthlyPayment - (yearlyRent / 12);
             
             for (let month = 0; month < totalPayments; month++) {
-                // Add monthly savings
-                currentSavings += monthlyPayment;
+                // Calculate current monthly rent
+                const monthlyRent = currentYearlyRent / 12;
+                
+                // Add monthly savings (monthly payment minus current monthly rent)
+                const monthlySavings = monthlyPayment - monthlyRent;
+                currentSavings += monthlySavings;
+                
                 // Apply monthly investment return
                 currentSavings *= (1 + (investmentReturn / 12));
                 
-                // Calculate rent
-                const monthlyRent = currentYearlyRent / 12;
+                // Add to total rent paid
                 totalRentPaid += monthlyRent;
 
                 // Store yearly data for chart
                 if ((month + 1) % 12 === 0) {
                     const year = Math.floor(month / 12);
+                    const yearlyRentAmount = currentYearlyRent;
                     yearlyData.push({
                         kpr: year === 0 ? 
                             (downPayment + monthlyPayment * 12 + yearlyMaintenance) : 
                             (monthlyPayment * 12 + yearlyMaintenance),
-                        savings: currentYearlyRent
+                        savings: yearlyRentAmount,
+                        monthlySavings: (monthlyPayment - monthlyRent) * 12
                     });
                     currentSavingsPerYear.push(currentSavings);
+                    // Increase yearly rent for next year
                     currentYearlyRent *= (1 + rentIncrease);
                 }
             }
@@ -279,13 +288,16 @@
             const resultHTML = `
                 <div class="assumptions">
                     <div class="assumptions-title">Asumsi Perhitungan untuk Periode ${loanTerm} Tahun:</div>
-                    - Jumlah yang ditabung (pada opsi nabung dulu) per bulan sama dengan cicilan KPR: ${formatCurrency(monthlyPayment)}<br>
+                    - Dana awal (setara DP): ${formatCurrency(downPayment)}<br>
+                    - Jumlah yang bisa ditabung per bulan awal: ${formatCurrency(initialMonthlySavings)} 
+                      (Cicilan KPR ${formatCurrency(monthlyPayment)} - Sewa ${formatCurrency(yearlyRent/12)})<br>
                     - Return investasi tabungan: ${document.getElementById('investmentReturn').value}% per tahun<br>
                     - Kenaikan harga properti: ${document.getElementById('propertyAppreciation').value}% per tahun<br>
                     - Kenaikan biaya sewa: ${document.getElementById('rentIncrease').value}% per tahun
                 </div>
                 <div class="highlight">
                     <strong>Opsi 1: KPR Sekarang</strong><br>
+                    Down Payment: ${formatCurrency(downPayment)}<br>
                     Cicilan per bulan: ${formatCurrency(monthlyPayment)}<br>
                     Total biaya KPR (DP + cicilan): ${formatCurrency(totalKPRCost)}<br>
                     Total biaya maintenance selama ${loanTerm} tahun: ${formatCurrency(totalKPRMaintenance)}<br>
@@ -296,6 +308,7 @@
                 </div>
                 <div class="highlight">
                     <strong>Opsi 2: Nabung Selama Periode KPR (${loanTerm} tahun)</strong><br>
+                    Dana awal (setara DP): ${formatCurrency(downPayment)}<br>
                     Total tabungan setelah ${loanTerm} tahun: ${formatCurrency(currentSavings)}<br>
                     Total biaya sewa selama ${loanTerm} tahun: ${formatCurrency(totalRentPaid)}<br>
                     <div class="important-note">
@@ -407,7 +420,7 @@
                 }
             });
 
-            // Update cash flow chart with yearly data
+            // Update cash flow chart
             if (cashFlowChart) {
                 cashFlowChart.destroy();
             }

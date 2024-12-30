@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Analisa Opsi Pembelian Rumah Baru</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: -apple-system, system-ui, BlinkMacSystemFont;
+        }
+        body {
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .input-hint {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 4px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            margin: 10px 0;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+        .highlight {
+            background: #e8f4ff;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: 40px 0;
+            padding: 20px;
+        }
+        .section-title {
+            color: #007bff;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+        .assumptions {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+        .assumptions-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .note {
+            font-style: italic;
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 8px;
+        }
+        .important-note {
+            border-left: 4px solid #007bff;
+            padding-left: 10px;
+            margin: 10px 0;
+            color: #444;
+        }
+        .comparison-value {
+            font-weight: bold;
+            color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Analisa Opsi Pembelian Rumah Baru</h1>
+            <p>Perbandingan komprehensif antara KPR sekarang vs menabung selama periode KPR</p>
+            <div class="important-note">
+                Analisa ini membandingkan pembelian rumah baru saat ini (via KPR) dengan akumulasi tabungan 
+                selama periode yang sama untuk membeli rumah baru di masa depan.
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h2 class="section-title">Parameter KPR</h2>
+                <div class="input-group">
+                    <label>Harga Properti Saat Ini</label>
+                    <input type="number" id="propertyPrice" value="500000000">
+                </div>
+                <div class="input-group">
+                    <label>Down Payment (%)</label>
+                    <input type="number" id="downPayment" value="20">
+                </div>
+                <div class="input-group">
+                    <label>Suku Bunga KPR (%)</label>
+                    <input type="number" id="interestRate" value="8.5" step="0.1">
+                    <div class="input-hint">Rekomendasi: Bunga Fixed 15 tahun BSI 8.5%</div>
+                </div>
+                <div class="input-group">
+                    <label>Tenor KPR (tahun)</label>
+                    <input type="number" id="loanTerm" value="20">
+                </div>
+                <div class="input-group">
+                    <label>Biaya Maintenance Tahunan</label>
+                    <input type="number" id="maintenanceCost" value="6000000">
+                </div>
+                <div class="input-group">
+                    <label>Inflasi Harga Properti per Tahun (%)</label>
+                    <input type="number" id="propertyAppreciation" value="5" step="0.1">
+                    <div class="input-hint">Estimasi kenaikan harga rumah baru dengan spesifikasi yang sama</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="section-title">Parameter Nabung</h2>
+                <div class="input-group">
+                    <label>Biaya Sewa per Tahun</label>
+                    <input type="number" id="yearlyRent" value="36000000">
+                </div>
+                <div class="input-group">
+                    <label>Kenaikan Sewa per Tahun (%)</label>
+                    <input type="number" id="rentIncrease" value="2.5" step="0.1">
+                </div>
+                <div class="input-group">
+                    <label>Return Investasi per Tahun (%)</label>
+                    <input type="number" id="investmentReturn" value="6" step="0.1">
+                    <div class="input-hint">Estimasi return investasi dana tabungan</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <button onclick="calculate()">Hitung Perbandingan</button>
+            <div id="result" class="result">
+                <!-- Results will be displayed here -->
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h2 class="section-title">Perbandingan Total Biaya</h2>
+                <div class="chart-container">
+                    <canvas id="comparisonChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="section-title">Cash Flow Tahunan</h2>
+                <div class="chart-container">
+                    <canvas id="cashFlowChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let comparisonChart;
+        let cashFlowChart;
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(amount);
+        }
+
+        function calculate() {
+            // Get input values
+            const propertyPrice = parseFloat(document.getElementById('propertyPrice').value);
+            const downPaymentPercent = parseFloat(document.getElementById('downPayment').value);
+            const interestRate = parseFloat(document.getElementById('interestRate').value) / 100;
+            const loanTerm = parseInt(document.getElementById('loanTerm').value);
+            const yearlyMaintenance = parseFloat(document.getElementById('maintenanceCost').value);
+            const yearlyRent = parseFloat(document.getElementById('yearlyRent').value);
+            const rentIncrease = parseFloat(document.getElementById('rentIncrease').value) / 100;
+            const investmentReturn = parseFloat(document.getElementById('investmentReturn').value) / 100;
+            const propertyAppreciation = parseFloat(document.getElementById('propertyAppreciation').value) / 100;
+
+            // Calculate KPR
+            const downPayment = propertyPrice * (downPaymentPercent / 100);
+            const loanAmount = propertyPrice - downPayment;
+            const monthlyInterest = interestRate / 12;
+            const totalPayments = loanTerm * 12;
+            const monthlyPayment = (loanAmount * monthlyInterest * Math.pow(1 + monthlyInterest, totalPayments)) / 
+                                 (Math.pow(1 + monthlyInterest, totalPayments) - 1);
+            const totalKPRCost = monthlyPayment * totalPayments + downPayment;
+
+            // Calculate savings and rent over KPR period
+            let currentSavings = 0;
+            let totalRentPaid = 0;
+            let currentYearlyRent = yearlyRent;
+            let yearlyData = [];
+            let currentSavingsPerYear = [];
+            
+            for (let month = 0; month < totalPayments; month++) {
+                // Add monthly savings
+                currentSavings += monthlyPayment;
+                // Apply monthly investment return
+                currentSavings *= (1 + (investmentReturn / 12));
+                
+                // Calculate rent
+                const monthlyRent = currentYearlyRent / 12;
+                totalRentPaid += monthlyRent;
+
+                // Store yearly data for chart
+                if ((month + 1) % 12 === 0) {
+                    const year = Math.floor(month / 12);
+                    yearlyData.push({
+                        kpr: year === 0 ? 
+                            (downPayment + monthlyPayment * 12 + yearlyMaintenance) : 
+                            (monthlyPayment * 12 + yearlyMaintenance),
+                        savings: currentYearlyRent
+                    });
+                    currentSavingsPerYear.push(currentSavings);
+                    currentYearlyRent *= (1 + rentIncrease);
+                }
+            }
+
+            // Calculate future property value
+            const futurePropertyValue = propertyPrice * Math.pow(1 + propertyAppreciation, loanTerm);
+            
+            // Calculate total costs
+            const totalKPRMaintenance = yearlyMaintenance * loanTerm;
+            const totalKPRPath = totalKPRCost + totalKPRMaintenance;
+
+            // Update results
+            const resultHTML = `
+                <div class="assumptions">
+                    <div class="assumptions-title">Asumsi Perhitungan untuk Periode ${loanTerm} Tahun:</div>
+                    - Jumlah yang ditabung (pada opsi nabung dulu) per bulan sama dengan cicilan KPR: ${formatCurrency(monthlyPayment)}<br>
+                    - Return investasi tabungan: ${document.getElementById('investmentReturn').value}% per tahun<br>
+                    - Kenaikan harga properti: ${document.getElementById('propertyAppreciation').value}% per tahun<br>
+                    - Kenaikan biaya sewa: ${document.getElementById('rentIncrease').value}% per tahun
+                </div>
+                <div class="highlight">
+                    <strong>Opsi 1: KPR Sekarang</strong><br>
+                    Cicilan per bulan: ${formatCurrency(monthlyPayment)}<br>
+                    Total biaya KPR (DP + cicilan): ${formatCurrency(totalKPRCost)}<br>
+                    Total biaya maintenance selama ${loanTerm} tahun: ${formatCurrency(totalKPRMaintenance)}<br>
+                    Total pengeluaran: ${formatCurrency(totalKPRPath)}<br>
+                    <div class="note">
+                        * Setelah ${loanTerm} tahun, Anda memiliki rumah yang sudah lunas
+                    </div>
+                </div>
+                <div class="highlight">
+                    <strong>Opsi 2: Nabung Selama Periode KPR (${loanTerm} tahun)</strong><br>
+                    Total tabungan setelah ${loanTerm} tahun: ${formatCurrency(currentSavings)}<br>
+                    Total biaya sewa selama ${loanTerm} tahun: ${formatCurrency(totalRentPaid)}<br>
+                    <div class="important-note">
+                        <strong>Analisa Dana untuk Pembelian Rumah Baru:</strong><br>
+                        1. Total tabungan terkumpul: ${formatCurrency(currentSavings)}<br>
+                        2. Harga rumah baru dengan spek yang sama setelah ${loanTerm} tahun: ${formatCurrency(futurePropertyValue)}<br>
+                        3. ${currentSavings >= futurePropertyValue ? 
+                            `Surplus tabungan: ${formatCurrency(currentSavings - futurePropertyValue)}` :
+                            `Kekurangan dana: ${formatCurrency(futurePropertyValue - currentSavings)}`}<br>
+                        <br>
+                        <strong>Kesimpulan:</strong><br>
+                        ${currentSavings >= futurePropertyValue ? 
+                            `Dana yang terkumpul <strong>CUKUP</strong> untuk membeli rumah baru dengan spesifikasi yang sama, 
+                             dengan surplus ${formatCurrency(currentSavings - futurePropertyValue)}` :
+                            `Dana yang terkumpul <strong>TIDAK CUKUP</strong> untuk membeli rumah baru dengan spesifikasi yang sama.<br>
+                            Anda perlu: <br>
+                            - Menabung ${formatCurrency((futurePropertyValue - currentSavings)/(loanTerm * 12))} tambahan per bulan, atau<br>
+                            - Menurunkan spesifikasi rumah yang diinginkan, atau<br>
+                            - Menambah waktu menabung`
+                        }
+                    </div>
+                </div>
+                <div class="highlight">
+                    <strong>Perbandingan Akhir Setelah ${loanTerm} Tahun:</strong><br>
+                    1. Opsi KPR:<br>
+                    - Total pengeluaran: ${formatCurrency(totalKPRPath)}<br>
+                    - Aset: Memiliki rumah (sudah lunas)<br>
+                    <br>
+                    2. Opsi Nabung:<br>
+                    - Total pengeluaran untuk sewa: ${formatCurrency(totalRentPaid)}<br>
+                    - Total tabungan terkumpul: ${formatCurrency(currentSavings)}<br>
+                    - Harga rumah baru saat itu: ${formatCurrency(futurePropertyValue)}<br>
+                    <div class="note">
+                        * Perhitungan mengasumsikan dana tabungan diinvestasikan dengan return ${document.getElementById('investmentReturn').value}% per tahun<br>
+                        * Kenaikan harga properti diasumsikan ${document.getElementById('propertyAppreciation').value}% per tahun<br>
+                        * Nilai properti yang ditampilkan adalah untuk rumah baru dengan spesifikasi yang sama, bukan nilai jual rumah KPR
+                    </div>
+                </div>
+            `;
+            document.getElementById('result').innerHTML = resultHTML;
+
+            // Update comparison chart
+            if (comparisonChart) {
+                comparisonChart.destroy();
+            }
+            comparisonChart = new Chart(document.getElementById('comparisonChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['KPR Sekarang', 'Nabung + Sewa'],
+                    datasets: [{
+                        label: 'Biaya Pokok (DP + Cicilan)',
+                        data: [totalKPRCost, 0],
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)'
+                    }, {
+                        label: 'Biaya Maintenance/Sewa',
+                        data: [totalKPRMaintenance, totalRentPaid],
+                        backgroundColor: 'rgba(255, 99, 132, 0.5)'
+                    }, {
+                        label: 'Dana Tabungan',
+                        data: [0, currentSavings],
+                        backgroundColor: 'rgba(75, 192, 192, 0.5)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `Perbandingan Total Biaya dan Dana Setelah ${loanTerm} Tahun`,
+                            font: {
+                                size: 16
+                            }
+                        },
+                        legend: {
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    label += formatCurrency(context.parsed.y);
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Rupiah'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return formatCurrency(value);
+                                }
+                            }
+                        },
+                        x: {
+                            stacked: true
+                        }
+                    }
+                }
+            });
+
+            // Update cash flow chart with yearly data
+            if (cashFlowChart) {
+                cashFlowChart.destroy();
+            }
+            cashFlowChart = new Chart(document.getElementById('cashFlowChart'), {
+                type: 'line',
+                data: {
+                    labels: yearlyData.map((_, i) => `Tahun ${i + 1}`),
+                    datasets: [{
+                        label: 'Cash Flow KPR + Maintenance',
+                        data: yearlyData.map(d => d.kpr),
+                        borderColor: 'rgb(54, 162, 235)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                        tension: 0.1,
+                        fill: true
+                    }, {
+                        label: 'Biaya Sewa',
+                        data: yearlyData.map(d => d.savings),
+                        borderColor: 'rgb(255, 99, 132)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                        tension: 0.1,
+                        fill: true
+                    }, {
+                        label: 'Akumulasi Tabungan',
+                        data: currentSavingsPerYear,
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `Perbandingan Cash Flow dan Akumulasi Tabungan Selama ${loanTerm} Tahun`,
+                            font: {
+                                size: 16
+                            }
+                        },
+                        legend: {
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    label += formatCurrency(context.parsed.y);
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Rupiah per Tahun'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return formatCurrency(value);
+                                }
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Tahun'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initial calculation
+        calculate();
+    </script>
+</body>
+</html>
